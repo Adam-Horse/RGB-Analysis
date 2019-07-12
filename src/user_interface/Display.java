@@ -164,7 +164,6 @@ class ImageComponent extends JPanel {
                 		Display.lineProfile(image, (int) leftBound.getStart().getCenterY(),
                 								   (int) leftBound.getStart().getCenterX(),
                 								   (int) rightBound.getX1(), imageName);
-                		System.out.println((int) profileLine.getX1());
                 	}
                 }
             }
