@@ -6,7 +6,6 @@ import java.awt.EventQueue;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Point;
-import java.awt.Rectangle;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.geom.Line2D;
@@ -123,7 +122,7 @@ class ImageComponent extends JPanel {
         
         //TODO Left-click = select, Right-click = deselect
         MouseAdapter ma = new MouseAdapter() {
-        	private Point clickPoint;
+        	private Point leftStart;
         	private Point currentPoint;
         	private double startRadius = 5;
         	
@@ -132,6 +131,7 @@ class ImageComponent extends JPanel {
         		currentPoint = e.getPoint();
         		
         		if (leftBound == null) {
+        			//Establishes left bound
 	       			leftBound = new Bound(currentPoint.getX(), 0, currentPoint.getX(), image.getHeight(), false);
 	       			leftBound.setStart(currentPoint, startRadius);
 	       		} else if (leftBound.isSet() == false) {
@@ -142,9 +142,12 @@ class ImageComponent extends JPanel {
         		
         		if (leftBound.isSet() == true) {
 	        		if (rightBound == null) {
+	        			//Establishes right bound
 		       			rightBound = new Bound(currentPoint.getX(), 0, currentPoint.getX(), image.getHeight(), false);
+		       			profileLine = new Line2D.Double(leftStart.getX(), leftStart.getY(), currentPoint.getX(), leftStart.getY());
 		       		} else if (rightBound.isSet() == false) {
 		        		rightBound.setLine(currentPoint.getX(), 0, currentPoint.getX(), image.getHeight());
+		        		profileLine = new Line2D.Double(leftStart.getX(), leftStart.getY(), currentPoint.getX(), leftStart.getY());
 		        		repaint();
 		        	}
         		}
@@ -154,18 +157,34 @@ class ImageComponent extends JPanel {
         	public void mousePressed(MouseEvent e) {
                 if (e.getButton() == MouseEvent.BUTTON1) {
                 	if (leftBound.isSet() == false) {
+                		//This stops the left bound from moving
 	                	leftBound.setState(true);
-	                	clickPoint = e.getPoint();
-	                	leftBound.setStart(clickPoint, startRadius);
+	                	leftStart = e.getPoint();
+	                	leftBound.setStart(leftStart, startRadius);
                 	} else if (leftBound.isSet() == true) {
+                		//This stops the right bound from moving
                 		rightBound.setState(true);
-                		profileLine = new Line2D.Double(clickPoint.getX(), clickPoint.getY(), rightBound.getX1(), clickPoint.getY());
+                		//This is the white middle line
+                		profileLine = new Line2D.Double(leftStart.getX(), leftStart.getY(), rightBound.getX1(), leftStart.getY());
                 		repaint();
                 		Display.lineProfile(image, (int) leftBound.getStart().getCenterY(),
                 								   (int) leftBound.getStart().getCenterX(),
                 								   (int) rightBound.getX1(), imageName);
                 	}
+                } else if (e.getButton() == MouseEvent.BUTTON3) {
+                	if (leftBound.isSet() == true) {
+                		//Resets left bound if already set
+                		leftBound.setState(false);
+                		leftBound.setLine(currentPoint.getX(), 0, currentPoint.getX(), image.getHeight());
+                		leftBound.setStart(e.getPoint(), startRadius);
+                		leftStart = null;
+                		//Deletes other lines
+                		profileLine = null;
+                		rightBound = null;
+                		repaint();
+                	}
                 }
+                
             }
         	
         };
@@ -220,7 +239,7 @@ class ImageComponent extends JPanel {
             g2d.draw(profileLine);
             g2d.dispose();
             g2d = (Graphics2D) g.create();
-            g2d.setColor(Color.YELLOW);
+            g2d.setColor(Color.WHITE);
             g2d.draw(profileLine);
             g2d.dispose();
         }
