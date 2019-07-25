@@ -1,6 +1,7 @@
 package user_interface;
 import java.awt.AlphaComposite;
 import java.awt.BasicStroke;
+import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.EventQueue;
 import java.awt.Graphics;
@@ -17,6 +18,7 @@ import java.io.PrintWriter;
 import java.util.ArrayList;
 
 import javax.imageio.ImageIO;
+import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
 import javax.swing.UIManager;
@@ -26,6 +28,8 @@ import imaging.Pixel;
 
 public class Display {
 	static ArrayList<Pixel> pixels = new ArrayList<Pixel>();
+	static ImageFrame frame;
+	
 	
 	public static void main(String[] args) {
 		
@@ -33,11 +37,9 @@ public class Display {
 
 			@Override
 			public void run() {
-				
-				ImageFrame frame = new ImageFrame();
+				frame = new ImageFrame();
 				frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 				frame.setVisible(true);
-				
 			}
 			
 		});
@@ -46,7 +48,7 @@ public class Display {
 	}
 	
 	public static void lineProfile(BufferedImage image, int lineLoc, int start, int end, String name) {
-		
+		//Instead of printing to console, display some info in the UI
 		try {
 			PrintWriter rgb = new PrintWriter(name + " RGB.txt");
 			int i = 0;
@@ -63,7 +65,17 @@ public class Display {
 						    pixels.get(i).getGreen());
 				i++;
 			}
+			System.out.println();
+			System.out.println("Start pixel: " + start);
+			System.out.println("End Pixel: " + end);
+			System.out.println("Total pixels: " + (end - start));
+			System.out.println("Line Height: " + lineLoc);
+			System.out.println();
+			//Change to not use static
+			frame.save();
+			//Don't change anything before it closes!
 			rgb.close();
+			System.out.println("Saved text file as: " + name + " RGB.txt");
 		} catch (FileNotFoundException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -76,16 +88,42 @@ class ImageFrame extends JFrame {
 	 * 
 	 */
 	private static final long serialVersionUID = 1L;
-
+	
+	ImageComponent imgComponent;
+	ButtonMenu menuComponent;
+	
 	public ImageFrame() {
 		
-		ImageComponent component = new ImageComponent();
+		imgComponent = new ImageComponent();
+		//menuComponent = new ButtonMenu(imgComponent.getWidth());
 		
 		setTitle("RGB Test");
-		setSize(component.imageWidth + 16, component.imageHeight + 39);
+		setSize(imgComponent.getWidth(), imgComponent.getHeight());
+		//System.out.println("" + imgComponent.getHeight());
+		//TODO Use border layout, research later
+		//Its not showing the whole image...
+		//add(menuComponent, BorderLayout.PAGE_END);
+		add(imgComponent);
 		
-		add(component);
+		
 	}
+	
+	public void save() {
+    	
+    	BufferedImage bImg = new BufferedImage(imgComponent.getWidth(), imgComponent.getHeight(), BufferedImage.TYPE_INT_RGB);
+    	Graphics2D cg = bImg.createGraphics();
+    	imgComponent.paintAll(cg);
+    	
+    	try {
+    		if (ImageIO.write(bImg, "png", new File("./" + imgComponent.getName() + " Bounds.png"))) {
+    			System.out.println("Saved image as: " + imgComponent.getName() + ".png");
+    		}
+    	} catch (IOException e) {
+    		e.printStackTrace();
+    	}
+    	
+    }
+	
 }
 
 class ImageComponent extends JPanel {
@@ -99,26 +137,32 @@ class ImageComponent extends JPanel {
 	public int start;
 	public int end;
     
-	public String imageName = "Cu-Pt day after";
+	public String imageName = "SS frozen 2";
 	
 	private Bound leftBound;
 	private Bound rightBound;
 	private Line2D profileLine;
 	
+	
     public ImageComponent() {
+    	
+    	
         try {
-            File image2 = new File("src\\" + imageName + ".jpeg");
+        	
+            File image2 = new File("src\\images\\" + imageName + ".JPG");
             image = ImageIO.read(image2);
             imageWidth = image.getWidth();
             imageHeight = image.getHeight();
             lineLoc = (int) Math.ceil((double) imageHeight / 2.0);
             start = 0;
             end = imageWidth;
+            
         }
         catch (IOException e) {
             e.printStackTrace();
         }
         
+        setSize(imageWidth + 16, imageHeight + 39);
         
         //TODO Left-click = select, Right-click = deselect
         MouseAdapter ma = new MouseAdapter() {
@@ -192,7 +236,14 @@ class ImageComponent extends JPanel {
         addMouseListener(ma);
         addMouseMotionListener(ma);
         
+        
+        
     }
+    
+    public String getName() {
+    	return imageName;
+    }
+    
     public void paintComponent (Graphics g) {
     	super.paintComponent(g);
         if(image == null) return;
@@ -245,5 +296,21 @@ class ImageComponent extends JPanel {
         }
         
     }
+}
+
+class ButtonMenu extends JPanel {
+
+	private JButton save;
+	private JButton clear;
+	
+	public ButtonMenu(int width) {
+		setSize(width, 100);
+
+        save = new JButton("Save");
+        clear = new JButton("Clear");
+		
+		add(save);
+        add(clear);
+	}
 }
 
