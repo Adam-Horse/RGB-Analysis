@@ -3,6 +3,7 @@ import java.awt.AlphaComposite;
 import java.awt.BasicStroke;
 import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.Desktop;
 import java.awt.EventQueue;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
@@ -19,6 +20,7 @@ import java.util.ArrayList;
 
 import javax.imageio.ImageIO;
 import javax.swing.JButton;
+import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
 import javax.swing.UIManager;
@@ -33,24 +35,33 @@ public class Display {
 	
 	public static void main(String[] args) {
 		
-		EventQueue.invokeLater(new Runnable() {
-
-			@Override
-			public void run() {
-				frame = new ImageFrame();
-				frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-				frame.setVisible(true);
-			}
-			
-		});
+		final JFileChooser fc = new JFileChooser();
+		fc.setCurrentDirectory(new File("./images"));
+    	int returnVal = fc.showOpenDialog(fc);
+    	String filePath = null;
+    	if (returnVal == JFileChooser.APPROVE_OPTION) {
+    		filePath = fc.getSelectedFile().getAbsolutePath();
+    	} else {
+    		System.out.println(("User clicked CANCEL"));
+    		System.exit(1);
+    	}
+		
+    	frame = new ImageFrame(filePath);
+		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		frame.setVisible(true);
 		
 		
 	}
 	
+	//Prints RGB data and saves it as text file in new dir
+	//TODO make everything print to console correctly
 	public static void lineProfile(BufferedImage image, int lineLoc, int start, int end, String name) {
+		
+		frame.save();
+		
 		//Instead of printing to console, display some info in the UI
 		try {
-			PrintWriter rgb = new PrintWriter(name + " RGB.txt");
+			PrintWriter rgb = new PrintWriter("./Data/" + name + "/" + name + " RGB.txt");
 			int i = 0;
 			while (i + start < end) {
 				pixels.add(new Pixel(image.getRGB(i + start, lineLoc), i + start, lineLoc));
@@ -72,7 +83,7 @@ public class Display {
 			System.out.println("Line Height: " + lineLoc);
 			System.out.println();
 			//Change to not use static
-			frame.save();
+			
 			//Don't change anything before it closes!
 			rgb.close();
 			System.out.println("Saved text file as: " + name + " RGB.txt");
@@ -92,9 +103,9 @@ class ImageFrame extends JFrame {
 	ImageComponent imgComponent;
 	ButtonMenu menuComponent;
 	
-	public ImageFrame() {
+	public ImageFrame(String imagePath) {
 		
-		imgComponent = new ImageComponent();
+		imgComponent = new ImageComponent(imagePath);
 		//menuComponent = new ButtonMenu(imgComponent.getWidth());
 		
 		setTitle("RGB Test");
@@ -108,14 +119,19 @@ class ImageFrame extends JFrame {
 		
 	}
 	
+	//Creates dir and saves image in it
 	public void save() {
     	
+		if (new File("./Data/" + imgComponent.getName()).mkdirs()) {
+			System.out.println("Created directory named: " + imgComponent.getName());
+		}
+		
     	BufferedImage bImg = new BufferedImage(imgComponent.getWidth(), imgComponent.getHeight(), BufferedImage.TYPE_INT_RGB);
     	Graphics2D cg = bImg.createGraphics();
     	imgComponent.paintAll(cg);
     	
     	try {
-    		if (ImageIO.write(bImg, "png", new File("./" + imgComponent.getName() + " Bounds.png"))) {
+    		if (ImageIO.write(bImg, "png", new File("./Data/" + imgComponent.getName() + "/" + imgComponent.getName() + " Bounds.png"))) {
     			System.out.println("Saved image as: " + imgComponent.getName() + ".png");
     		}
     	} catch (IOException e) {
@@ -137,26 +153,25 @@ class ImageComponent extends JPanel {
 	public int start;
 	public int end;
     
-	public String imageName = "SS frozen 2";
+	public String imageName;
 	
 	private Bound leftBound;
 	private Bound rightBound;
 	private Line2D profileLine;
 	
 	
-    public ImageComponent() {
+    public ImageComponent(String imagePath) {
     	
     	
         try {
-        	
-            File image2 = new File("src\\images\\" + imageName + ".JPG");
-            image = ImageIO.read(image2);
+        	File file = new File(imagePath);
+            image = ImageIO.read(file);
+            imageName = file.getName().substring(0, file.getName().indexOf("."));
             imageWidth = image.getWidth();
             imageHeight = image.getHeight();
             lineLoc = (int) Math.ceil((double) imageHeight / 2.0);
             start = 0;
             end = imageWidth;
-            
         }
         catch (IOException e) {
             e.printStackTrace();
