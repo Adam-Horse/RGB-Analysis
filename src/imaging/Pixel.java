@@ -10,8 +10,8 @@ public class Pixel {
 	
 	public Pixel(int rgb, int x, int y) {
 		this.red = (rgb >> 16) & 0xff;
-		this.blue = (rgb >> 8) & 0xff;
-		this.green = (rgb) & 0xff;
+		this.green = (rgb >> 8) & 0xff;
+		this.blue = (rgb) & 0xff;
 		
 		this.x = x;
 		this.y = y;
